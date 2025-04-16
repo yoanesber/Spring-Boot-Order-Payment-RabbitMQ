@@ -345,13 +345,22 @@ Successful publish logs and confirms `ack=true`.
 **Published Payload:**  
 ```json
 {
-    "orderId":"ORD123456789",
-    "amount":"199.99",
-    "currency":"USD",
-    "paymentMethod":"CREDIT_CARD",
-    "cardNumber":"1234 5678 9012 3456",
-    "cardExpiry":"31/12",
-    "cardCvv":"123"
+  "id": 1744814928936,
+  "orderId": "ORD123456789",
+  "amount": 199.99,
+  "currency": "USD",
+  "paymentMethod": "CREDIT_CARD",
+  "paymentStatus": "SUCCESS",
+  "cardNumber": "1234 5678 9012 3456",
+  "cardExpiry": "31/12",
+  "cardCvv": "123",
+  "paypalEmail": null,
+  "bankAccount": null,
+  "bankName": null,
+  "transactionId": "TXN1744814928936",
+  "retryCount": 0,
+  "createdAt": 1744814928.9367597,
+  "updatedAt": 1744814928.9367597
 }
 ```  
 
