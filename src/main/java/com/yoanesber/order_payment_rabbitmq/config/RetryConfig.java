@@ -18,7 +18,7 @@ import com.yoanesber.order_payment_rabbitmq.recovery.LoggingRejectAndDontRequeue
 public class RetryConfig {
 
     private static final int MAX_ATTEMPTS = 3;
-    private static final long INITIAL_INTERVAL = 5000L; // 1 second
+    private static final long INITIAL_INTERVAL = 5000L; // 5 second
     private static final double MULTIPLIER = 1.0; // No multiplier, fixed interval
     private static final long MAX_INTERVAL = 10000L; // 10 seconds
 

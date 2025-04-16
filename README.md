@@ -196,7 +196,7 @@ sudo rabbitmqctl set_permissions -p /order-payment spring_admin ".*" ".*" ".*"
 # Gives all permissions to spring_user
 sudo rabbitmqctl set_permissions -p /order-payment spring_user ".*" ".*" ".*"
 
-# Lists the permissions of the specified user
+# Lists the permissions of the specified user, to verify the permissions assigned to users: spring_admin and spring_user
 sudo rabbitmqctl list_user_permissions <user>
 ```
 
@@ -209,7 +209,7 @@ sudo rabbitmqctl set_user_tags spring_admin administrator
 # Removes all tags from spring_user (default is a regular user)
 sudo rabbitmqctl set_user_tags spring_user
 
-# Lists all RabbitMQ users along with their tags
+# Lists all RabbitMQ users along with their tags, to ensure that the appropriate tags have been successfully assigned to users: spring_admin and spring_user
 sudo rabbitmqctl list_users
 ```
 
@@ -226,7 +226,7 @@ sudo rabbitmq-plugins enable rabbitmq_management
 sudo service rabbitmq-server restart
 ```
 
-Open the UI in your browser:  
+Open the RabbitMQ UI in your browser:  
 
 ```text
 http://<your-server-ip>:15672/
@@ -239,8 +239,8 @@ http://<your-server-ip>:15672/
 Ensure Git is installed, then clone the project repository:  
 
 ```bash
-git clone https://github.com/your-org/order-payment-service.git
-cd order-payment-service
+git clone https://github.com/yoanesber/Spring-Boot-Order-Payment-RabbitMQ.git
+cd Spring-Boot-Order-Payment-RabbitMQ
 ```
 
 2. Configure RabbitMQ in `application.properties`  
@@ -372,7 +372,7 @@ Simulate RabbitMQ being offline (e.g., service stopped or wrong port) when sendi
 
 **Expected:**  
 
-- `RabbitTemplate.convertAndSend(...)` will throw AmqpConnectException.  
+- `RabbitTemplate.convertAndSend(...)` will throw `AmqpConnectException`.  
 - No `ack=false` involved, as message is **never delivered to RabbitMQ**.  
 - Appropriate error-handling logic should catch and log the failure.  
 
@@ -445,7 +445,7 @@ Forced exception triggers retry (maxAttempts reached). This project uses `RetryI
 public class RetryConfig {
 
     private static final int MAX_ATTEMPTS = 3;
-    private static final long INITIAL_INTERVAL = 5000L; // 1 second
+    private static final long INITIAL_INTERVAL = 5000L; // 5 second
     private static final double MULTIPLIER = 1.0; // No multiplier, fixed interval
     private static final long MAX_INTERVAL = 10000L; // 10 seconds
 
@@ -472,52 +472,64 @@ public class RetryConfig {
 📸 Code snippet of **Forced Exception**  
 
 ```java
-@RabbitListener(queues = "order.payment.success.queue", containerFactory = "successQueueFactory")
-public void handleSuccess(Message message) throws Exception {
-    // Get the message body as a Map
-    Map<String, Object> messageMap = HelperUtil.convertToMap(message.getBody());
-    
-    // Get the retry count from the RetrySynchronizationManager
-    int retryCount = Optional.ofNullable(RetrySynchronizationManager.getContext())
-                            .map(RetryContext::getRetryCount)
-                            .orElse(0);
+@Component
+public class PaymentListener {
 
-    if (retryCount > 0) {
-        logger.info("Retrying message processing. Retry count: {} with message: {}", retryCount, messageMap.toString());
-    } else {
-        logger.info("Processing message for the first time. Message: {}", messageMap.toString());
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    private final boolean isSimulated = true; // Simulate processing failure for demonstration purposes 
+
+    @RabbitListener(queues = "order.payment.success.queue", containerFactory = "successQueueFactory")
+    public void handleSuccess(Message message) throws Exception {
+        // Get the message body as a Map
+        Map<String, Object> messageMap = HelperUtil.convertToMap(message.getBody());
+        
+        // Get the retry count from the RetrySynchronizationManager
+        int retryCount = Optional.ofNullable(RetrySynchronizationManager.getContext())
+                             .map(RetryContext::getRetryCount)
+                             .orElse(0);
+
+        if (retryCount > 0) {
+            logger.info("Retrying message processing. Retry count: {} with message: {}", retryCount, messageMap.toString());
+        } else {
+            logger.info("Processing message for the first time. Message: {}", messageMap.toString());
+        }
+
+        // Process the message
+        // For example, update the order status in the database or send a notification
+
+        // Simulate processing failure for demonstration purposes
+        if (isSimulated) {
+            logger.info("Simulating processing failure for demonstration purposes...");
+            throw new RuntimeException("Simulated processing failure...");
+        }
     }
 
-    // Process the message
-    // For example, update the order status in the database or send a notification
+    @RabbitListener(queues = "order.payment.failed.queue", containerFactory = "failedQueueFactory")
+    public void handleFailed(Message message) throws Exception {
+        // Get the message body as a Map
+        Map<String, Object> messageMap = HelperUtil.convertToMap(message.getBody());
+        
+        // Get the retry count from the RetrySynchronizationManager
+        int retryCount = Optional.ofNullable(RetrySynchronizationManager.getContext())
+                             .map(RetryContext::getRetryCount)
+                             .orElse(0);
 
-    // Simulate processing failure for demonstration purposes
-    logger.info("Simulating processing failure for demonstration purposes...");
-    throw new RuntimeException("Simulated processing failure...");
-}
+        if (retryCount > 0) {
+            logger.info("Retrying message processing. Retry count: {} with message: {}", retryCount, messageMap.toString());
+        } else {
+            logger.info("Processing message for the first time. Message: {}", messageMap.toString());
+        }
 
-@RabbitListener(queues = "order.payment.failed.queue", containerFactory = "failedQueueFactory")
-public void handleFailed(Message message) throws Exception {
-    // Get the message body as a Map
-    Map<String, Object> messageMap = HelperUtil.convertToMap(message.getBody());
-    
-    // Get the retry count from the RetrySynchronizationManager
-    int retryCount = Optional.ofNullable(RetrySynchronizationManager.getContext())
-                            .map(RetryContext::getRetryCount)
-                            .orElse(0);
+        // Process the message
+        // For example, log the error or send an alert
 
-    if (retryCount > 0) {
-        logger.info("Retrying message processing. Retry count: {} with message: {}", retryCount, messageMap.toString());
-    } else {
-        logger.info("Processing message for the first time. Message: {}", messageMap.toString());
+        // Simulate processing failure for demonstration purposes
+        if (isSimulated) {
+            logger.info("Simulating processing failure for demonstration purposes...");
+            throw new RuntimeException("Simulated processing failure...");
+        }
     }
-
-    // Process the message
-    // For example, log the error or send an alert
-
-    // Simulate processing failure for demonstration purposes
-    logger.info("Simulating processing failure for demonstration purposes...");
-    throw new RuntimeException("Simulated processing failure...");
 }
 ```
 

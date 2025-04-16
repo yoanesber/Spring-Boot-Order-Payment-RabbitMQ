@@ -8,6 +8,7 @@ import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.support.RetrySynchronizationManager;
+import org.springframework.stereotype.Component;
 
 /**
  * LoggingRejectAndDontRequeueRecoverer is a custom recoverer that extends RejectAndDontRequeueRecoverer.
@@ -15,6 +16,7 @@ import org.springframework.retry.support.RetrySynchronizationManager;
  * This class is used to handle message recovery in RabbitMQ when retries are exhausted.
  */ 
 
+ @Component
 public class LoggingRejectAndDontRequeueRecoverer extends RejectAndDontRequeueRecoverer {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
