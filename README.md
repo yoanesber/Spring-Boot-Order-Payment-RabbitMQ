@@ -14,14 +14,21 @@ Below are the core features that make this solution robust and ready for real-wo
     - Two primary queues are used: `order.payment.success.queue` and `order.payment.failed.queue`.  
     - Each queue is bound to a dedicated exchange (`order.payment.exchange`) with specific routing keys: `order.payment.success` and `order.payment.failed`.  
     - Utilizes `@RabbitListener` annotated methods to consume and process messages from dedicated queues.  
-- **Dead Letter Handling**
-    - Both queues are configured with **Dead-Letter Exchanges (DLX) `order.payment.dlx.exchange`** and routing keys to redirect unprocessed or failed messages.  
+- **Publisher Retry Support with `RetryTemplate`**  
+    - Incorporates `RetryTemplate` in the publishing logic to **re-attempt message sending** in case of transient failures (e.g., broker unavailability).  
+    - Ensures robust delivery guarantees by wrapping message publishing logic with retry policies and backoff strategies.  
+    - Helps avoid message loss due to temporary network or broker issues, improving resilience on the producer side.  
+- **Retry Mechanism (Consumer-Side)**
+    - Implements the retry strategy using `RetryInterceptorBuilder`, configured as a **retry advice bean** to handle retries during message consumption.  
+    - Applies a **fixed backoff policy**, introducing a configurable delay (e.g., `5 seconds`) between each retry attempt to give transient issues time to resolve.  
+    - Allows customization of the **maximum number of retry attempts** (e.g., `3 times`), enabling fine-grained control over retry behavior in case of processing failures.  
+    - Uses `RejectAndDontRequeueRecoverer` as the recovery strategy once all retry attempts are exhausted, preventing the message from being requeued and retried indefinitely.  
+    - Automatically routes messages that exceed retry attempts to the configured **Dead Letter Queue (DLQ)** (`order.payment.success.dlq` or `order.payment.failed.dlq`), ensuring failed messages are captured for analysis or manual intervention.  
+    - Enhances system **resilience and observability** by isolating problematic messages, avoiding message loss, and preventing consumer thread blockage due to persistent failures.  
+- **Dead Letter Handling (DLQ)**
+    - Both queues `order.payment.success` and `order.payment.failed` are configured with **Dead-Letter Exchanges (DLX) `order.payment.dlx.exchange`** and routing keys to redirect unprocessed or failed messages.  
     - After the maximum number of retry attempts is exceeded, messages are routed to their respective **Dead Letter Queues (DLQs): `order.payment.success.dlq` and `order.payment.failed.dlq`** for further inspection or reprocessing.  
-- **Retry Mechanism**
-    - Implements a retry strategy using `RetryInterceptorBuilder`.  
-    - Supports **fixed backoff** configuration with a maximum number of retry attempts.  
-    - Enables controlled retry behavior with customizable delay and retry count for transient failures.  
-    - Uses the `RejectAndDontRequeueRecoverer` to prevent retry loops by rejecting messages that exceed retry attempts and sending them to the DLQ.  
+
 
 ### 🧩 Role of `RejectAndDontRequeueRecoverer`  
 
