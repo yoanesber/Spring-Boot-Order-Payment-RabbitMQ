@@ -4,12 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpException;  
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 /**
- * MessagePublisher is a component responsible for publishing messages to RabbitMQ exchanges.
- * It uses RabbitTemplate to send messages and provides a method to publish messages with a specific exchange and routing key.
+ * MessagePublisher is a component that handles the publishing of messages to RabbitMQ exchanges.
+ * It uses RabbitTemplate for sending messages and RetryTemplate for retrying message publishing in case of failures.
+ * The class provides a method to publish messages with a specified exchange name, routing key, and message content.
  */
 
 @Component
@@ -17,10 +19,13 @@ public class MessagePublisher {
     
     private final RabbitTemplate rabbitTemplate;
 
+    private final RetryTemplate retryTemplate;
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public MessagePublisher(RabbitTemplate rabbitTemplate) {
+    public MessagePublisher(RabbitTemplate rabbitTemplate, RetryTemplate retryTemplate) {
         this.rabbitTemplate = rabbitTemplate;
+        this.retryTemplate = retryTemplate;
     }
 
     /**
@@ -37,7 +42,19 @@ public class MessagePublisher {
         Assert.notNull(message, "Message must not be null");
 
         try {
-            rabbitTemplate.convertAndSend(exchangeName, routingKey, message);
+            retryTemplate.execute(context -> {
+                logger.info("Attempt {} to publish message: {}", context.getRetryCount() + 1, message);
+                rabbitTemplate.convertAndSend(exchangeName, routingKey, message);
+                return null;
+            }, context -> {
+                logger.error("All retry attempts failed to publish message: {}. Last error: {}",
+                    message, context.getLastThrowable().getMessage());
+
+                // Optional: persist message to DB/Redis for future retry or notify admin
+                // This could be a custom implementation to handle the failure case
+                
+                return null;
+            });
         } catch (AmqpException e) {
             logger.error("Failed to publish message to exchange: {}, routingKey: {}, message: {}. Error: {}", exchangeName, routingKey, message, e.getMessage(), e);
             throw new RuntimeException("Failed to publish message", e);

@@ -151,12 +151,34 @@ sudo systemctl enable rabbitmq-server
 sudo systemctl start rabbitmq-server
 ```
 
-Verify that the server is running:  
+To ensure that RabbitMQ is running correctly, you can verify the status of the service using the following command:  
 
 ```bash
 # Check the running status of RabbitMQ service
 sudo systemctl status rabbitmq-server
-```
+```  
+
+This command will display detailed information about the RabbitMQ service, including whether it's active and running:  
+
+```bash
+● rabbitmq-server.service - RabbitMQ Messaging Server
+     Loaded: loaded (/usr/lib/systemd/system/rabbitmq-server.service; enabled; preset: enabled)
+     Active: active (running) since Wed 2025-04-16 22:09:48 WIB; 12h ago
+   Main PID: 164090 (beam.smp)
+      Tasks: 84 (limit: 38350)
+     Memory: 165.3M ()
+     CGroup: /system.slice/rabbitmq-server.service
+             ├─164090 /usr/lib/erlang/erts-13.2.2.5/bin/beam.smp -W w -MBas ageffcbf -MHas ageffcbf -MBlmbcs 512 -MHlmbcs 512 -MMmcs 30 -pc unicode -P 1048576 -t 5000000 -stbt db>
+             ├─164100 erl_child_setup 65536
+             ├─164272 /usr/lib/erlang/erts-13.2.2.5/bin/inet_gethost 4
+             ├─164273 /usr/lib/erlang/erts-13.2.2.5/bin/inet_gethost 4
+             └─164276 /bin/sh -s rabbit_disk_monitor
+
+Apr 16 22:09:44 LAPTOP-1UDHCSAN systemd[1]: Starting rabbitmq-server.service - RabbitMQ Messaging Server...
+Apr 16 22:09:48 LAPTOP-1UDHCSAN systemd[1]: Started rabbitmq-server.service - RabbitMQ Messaging Server.
+```  
+
+**📝 Note:** A successful output should show the status as `active (running)`, indicating that RabbitMQ is up and ready to handle messaging operations for the application. If it's not running, you may need to start it with `sudo systemctl start rabbitmq-server`.  
 
 2. Create Dedicated Users  
 
@@ -173,7 +195,10 @@ sudo rabbitmqctl add_user spring_user <password>
 
 # Verifies if the username and password combination is correct
 sudo rabbitmqctl authenticate_user <user> <password>
-```
+```  
+
+**📝 Note:** The `spring_admin` user is intended for administrative purposes, such as accessing the RabbitMQ Management UI and performing admin-level actions like managing queues, exchanges, and permissions. The `spring_user` is a regular user that your Spring Boot application will use to connect to RabbitMQ and publish/consume messages.  
+
 
 3. Create Virtual Host (vhost), Assign Permissions, and Tag Users  
 
@@ -185,9 +210,11 @@ sudo rabbitmqctl add_vhost /order-payment
 
 # Lists all virtual hosts on the RabbitMQ server
 sudo rabbitmqctl list_vhosts
-```
+```  
 
-Set permissions on the vhost:  
+**📝 Note:** A virtual host in RabbitMQ is like a namespace that provides logical separation between different applications or components using the same RabbitMQ instance. Each vhost can have its own set of queues, exchanges, bindings, and permissions, isolated from others.  
+
+After creating a virtual host, assign appropriate permissions to the users so they can interact with the resources (queues, exchanges, etc.) within that virtual host:  
 
 ```bash
 # Gives all permissions (configure, write, read) to spring_admin
@@ -196,11 +223,18 @@ sudo rabbitmqctl set_permissions -p /order-payment spring_admin ".*" ".*" ".*"
 # Gives all permissions to spring_user
 sudo rabbitmqctl set_permissions -p /order-payment spring_user ".*" ".*" ".*"
 
-# Lists the permissions of the specified user, to verify the permissions assigned to users: spring_admin and spring_user
+# Lists the permissions of the specified user, to verify permissions and ensure correct access control for each user
 sudo rabbitmqctl list_user_permissions <user>
-```
+```  
 
-Tag the users appropriately:  
+**📝 Note:** In RabbitMQ, permissions are defined with three scopes:  
+
+- **Configure** – Allows the user to create or modify exchanges and queues.  
+- **Write** – Allows the user to publish messages to exchanges.  
+- **Read** – Allows the user to consume messages from queues and subscribe to queues.  
+
+
+After creating users, you should assign them appropriate **tags** to define their level of access — especially for web-based management:  
 
 ```bash
 # Assigns administrator role to spring_admin (needed for management UI access)
@@ -211,12 +245,13 @@ sudo rabbitmqctl set_user_tags spring_user
 
 # Lists all RabbitMQ users along with their tags, to ensure that the appropriate tags have been successfully assigned to users: spring_admin and spring_user
 sudo rabbitmqctl list_users
-```
+```  
 
+**📝 Note:** Tags determine what a user can do, particularly through the RabbitMQ Management Web UI. `spring_admin` is tagged as an `administrator` to allow full access to the **Management UI and perform administrative operations**. `spring_user` has no tags, making it a regular messaging user — suitable for interacting with Spring Boot application (publishing/consuming messages).  
 
 4. Enable the Management Plugin  
 
-This plugin provides a web-based UI for monitoring and managing RabbitMQ.  
+The RabbitMQ Management Plugin provides a **web-based UI** to monitor, manage, and inspect RabbitMQ components like queues, exchanges, bindings, and messages in real time.  
 
 ```bash
 # Enables the web UI plugin for RabbitMQ
@@ -226,17 +261,23 @@ sudo rabbitmq-plugins enable rabbitmq_management
 sudo service rabbitmq-server restart
 ```
 
-Open the RabbitMQ UI in your browser:  
+Once the plugin is enabled and RabbitMQ restarts successfully, the UI can be accessed from the browser:  
 
-```text
+```cpp
 http://<your-server-ip>:15672/
-```
+```  
+
+**📝 Note:** Use the `spring_admin` user (created earlier) with the assigned `administrator` tag to access this UI. This interface allows administrative actions like creating queues, binding exchanges, inspecting messages, managing users, and more. Ensure that the server port `15672` is open on your firewall or cloud provider (like AWS or DigitalOcean) to access it externally.  
+
+![Image](https://github.com/user-attachments/assets/3679f53a-6b2e-4966-90c7-8534b33cd19d)  
+
+![Image](https://github.com/user-attachments/assets/443b7cd9-05a7-43a9-aef6-9538e9cdc619)  
 
 ### B. Spring Boot Integration    
 
 1. Clone the Project  
 
-Ensure Git is installed, then clone the project repository:  
+Ensure `Git` is installed, then clone the project repository:  
 
 ```bash
 git clone https://github.com/yoanesber/Spring-Boot-Order-Payment-RabbitMQ.git
@@ -245,7 +286,7 @@ cd Spring-Boot-Order-Payment-RabbitMQ
 
 2. Configure RabbitMQ in `application.properties`  
 
-Update your configuration with RabbitMQ connection details:  
+Update the configuration with RabbitMQ connection details:  
 
 ```bash
 # RabbitMQ Configuration
@@ -268,7 +309,7 @@ Use Maven to start the application:
 mvn spring-boot:run
 ```
 
-Once started, your server should be accessible at:  
+Once started, the server should be accessible at:  
 
 ```bash
 http://localhost:8081/ 
@@ -285,7 +326,7 @@ In this Order Payment REST API project, backed by RabbitMQ, involves a critical 
 
 ### A. REST API Testing  
 
-The REST API serves as the entry point for order payment creation. These endpoints must be validated against both valid and invalid inputs, ensuring correct status codes and responses are returned. Negative tests help ensure that error handling is consistent and secure.
+The REST API serves as the entry point for order payment creation. These endpoints must be validated against both valid and invalid inputs, ensuring correct status codes and responses are returned. Negative tests help ensure that error handling is consistent and secure.  
 
 1. **✅ Test Case: Create Order with Valid Payload**  
 
@@ -305,7 +346,7 @@ Create order with valid payload → expect `201 Created`.
 }
 ```
 
-**Expected:** `201 Created`  
+**Expected Result:** `201 Created`  
 
 📸 Postman screenshot for successful creation  
 
@@ -328,15 +369,15 @@ Missing or invalid fields → expect `400 Bad Request`.
 }
 ```
 
-**Expected:** `400 Bad Request`  
+**Expected Result:** `400 Bad Request`  
 
 📸 Postman screenshot showing validation error  
 
-![Image](https://github.com/user-attachments/assets/53869e34-f85d-4866-b35f-d146b4e0a902)
+![Image](https://github.com/user-attachments/assets/53869e34-f85d-4866-b35f-d146b4e0a902)  
 
 ### B. RabbitMQ Publisher Testing  
 
-The RabbitMQ publisher is responsible for sending serialized JSON messages to the `order.payment.success.queue` or `order.payment.failed.queue` queues in `order.payment.exchange` exchanges. Tests should verify correct exchange/routing key usage, message structure, and RabbitTemplate confirm callbacks.
+The RabbitMQ publisher is responsible for sending serialized JSON messages to the `order.payment.success.queue` or `order.payment.failed.queue` queues in `order.payment.exchange` exchanges. Tests should verify correct exchange/routing key usage, message structure, and RabbitTemplate confirm callbacks.  
 
 1. **✅ Test Case: Message Published Successfully**  
 
@@ -364,36 +405,55 @@ Successful publish logs and confirms `ack=true`.
 }
 ```  
 
-**Expected:** `ack=true` from ConfirmCallback  
+**Expected Result:** `ack=true` from `ConfirmCallback`  
 
 📸 Log output  
 
 ```bash
 2025-04-16T21:48:48.944+07:00  INFO 20712 --- [order-payment-rabbitmq] [ntContainer#1-1] c.y.o.listener.PaymentListener           : Processing message for the first time. Message: {id=1744814928936, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744814928936, retryCount=0, createdAt=1.7448149289367597E9, updatedAt=1.7448149289367597E9}
 2025-04-16T21:48:48.950+07:00  INFO 20712 --- [order-payment-rabbitmq] [nectionFactory5] c.y.o.c.RabbitMQConfig$$SpringCGLIB$$0   : RabbitMQ message acknowledged: null, ack: true, cause: null
-```
+```  
+
+**📝 Note:** `ack=true` in the `ConfirmCallback` means that the message has been **successfully received by the broker's exchange**, **not** necessarily consumed by the queue or processed by the listener. This confirmation only applies to the **publisher's side** (i.e., the `RabbitTemplate`) and indicates that RabbitMQ has **acknowledged receipt** of the message for routing.  
 
 2. **❌ Test Case: RabbitMQ Not Reachable**  
 
-Simulate RabbitMQ being offline (e.g., service stopped or wrong port) when sending a payment message using RabbitTemplate.  
+Simulate RabbitMQ being offline when sending a payment message using `RabbitTemplate` (e.g., stopping the RabbitMQ service, misconfiguring the port, or pointing to a non-existent host in `application.properties`).  
 
-**Published Payload:** (same as above)  
+**Published Payload:** (Same as the valid payload from the previous test case)  
 
-**Expected:**  
+**Expected Result:**  
 
-- `RabbitTemplate.convertAndSend(...)` will throw `AmqpConnectException`.  
-- No `ack=false` involved, as message is **never delivered to RabbitMQ**.  
-- Appropriate error-handling logic should catch and log the failure.  
+- `RabbitTemplate.convertAndSend(...)` throws an exception — specifically `AmqpConnectException`.  
+- No `ack=false` will be triggered from `ConfirmCallback`, because the publisher was **never able to establish a connection** with the RabbitMQ broker in the first place.  
+- Since the message never leaves the application, RabbitMQ has no awareness of the message — hence **acknowledgment (ACK) callbacks are never invoked**.  
+- Proper **error-handling logic** should **log** the error and potentially trigger **alerts**, **fallbacks**, or **message persistence** for retry later.  
 
 📸 Log output showing publishing failure  
 
 ```bash
-2025-04-16T21:58:31.697+07:00 ERROR 33924 --- [order-payment-rabbitmq] [nio-8081-exec-1] c.y.o.publisher.MessagePublisher         : Failed to publish message to exchange: order.payment.exchange, routingKey: order.payment.success, message: OrderPayment(id=1744815509501, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744815509500, retryCount=0, createdAt=2025-04-16T14:58:29.501506200Z, updatedAt=2025-04-16T14:58:29.501506200Z). Error: java.net.ConnectException: Connection refused: getsockopt
-
-org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused: getsockopt
-        at org.springframework.amqp.rabbit.support.RabbitExceptionTranslator.convertRabbitAccessException(RabbitExceptionTranslator.java:61) ~[spring-rabbit-3.2.4.jar:3.2.4]
+2025-04-17T12:10:03.110+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] c.y.o.publisher.MessagePublisher         : Attempt 1 to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z)
+2025-04-17T12:10:04.895+07:00 ERROR 51272 --- [order-payment-rabbitmq] [ntContainer#0-5] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+2025-04-17T12:10:04.895+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:06.968+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#0-5] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:07.919+07:00  WARN 51272 --- [order-payment-rabbitmq] [ntContainer#1-4] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it. Exception summary: org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused: getsockopt
+2025-04-17T12:10:07.920+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#1-4] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@6ff03037: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+2025-04-17T12:10:08.976+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] c.y.o.publisher.MessagePublisher         : Attempt 2 to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z)
+2025-04-17T12:10:09.039+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#1-5] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:11.113+07:00 ERROR 51272 --- [order-payment-rabbitmq] [ntContainer#1-5] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+2025-04-17T12:10:11.113+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:13.170+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#1-5] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:14.113+07:00  WARN 51272 --- [order-payment-rabbitmq] [ntContainer#0-5] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it. Exception summary: org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused: getsockopt
+2025-04-17T12:10:14.113+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#0-5] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@4b2e39b5: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
+2025-04-17T12:10:15.173+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] c.y.o.publisher.MessagePublisher         : Attempt 3 to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z)
+2025-04-17T12:10:15.222+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#0-6] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:17.282+07:00 ERROR 51272 --- [order-payment-rabbitmq] [ntContainer#0-6] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
+2025-04-17T12:10:17.282+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:19.328+07:00 ERROR 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] c.y.o.publisher.MessagePublisher         : All retry attempts failed to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z). Last error: java.net.ConnectException: Connection refused: getsockopt
 ...
-```
+```  
+
+**📝 Note:** The RabbitMQ broker is offline or unreachable (`Connection refused`), so the application is trying to **retry sending the message 3 times** before giving up. If the RabbitMQ broker is unreachable, the message is never delivered, and therefore **no ACK/NACK is received**, and the **callback is not triggered at all**. The `ConfirmCallback` and its `ack=true/false` behavior **only applies** when a message has successfully reached the **RabbitMQ broker** and is either accepted or rejected at the **exchange level**.  
 
 ### C. RabbitMQ Consumer/Listener Testing  
 
@@ -403,20 +463,22 @@ The RabbitMQ listener consumes payment messages from `order.payment.success.queu
 
 Message successfully processed by listener.  
 
-**Expected:** Message processed  
+**Expected Result:** Message processed  
 
 📸 RabbitMQ UI: view of `order.payment.success.queue` or `order.payment.failed.queue`  
 
 ![Image](https://github.com/user-attachments/assets/a3816bb6-03b7-4e5e-99e4-e73b46463ba3)
 
-**Note:** messages that have been successfully processed by a consumer (i.e., ack=true) are removed from the queue and no longer visible in the RabbitMQ Management UI.  
+**📝 Note:** “Message processed” – messages that have been successfully processed by a consumer (i.e., `ack=true`) are removed from the queue and no longer visible in the RabbitMQ Management UI.  
 
 📸 Log output of processing pipeline  
 
 ```bash
 2025-04-16T22:32:15.560+07:00  INFO 27152 --- [order-payment-rabbitmq] [nectionFactory2] c.y.o.c.RabbitMQConfig$$SpringCGLIB$$0   : RabbitMQ message acknowledged: null, ack: true, cause: null
 2025-04-16T22:32:15.683+07:00  INFO 27152 --- [order-payment-rabbitmq] [ntContainer#1-1] c.y.o.listener.PaymentListener           : Processing message for the first time. Message: {id=1744817535436, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744817535436, retryCount=0, createdAt=1.7448175354363935E9, updatedAt=1.7448175354363935E9}
-```
+```  
+
+**📝 Note:** `@RabbitListener` received the message and processed it. It confirms the message went through the whole pipeline: *deserialization → validation → business logic → ack*.  
 
 
 2. **❌ Test Case: Forced Exception → Retry**  
@@ -446,7 +508,7 @@ Forced exception triggers retry (maxAttempts reached). This project uses `RetryI
 }
 ```
 
-**Expected:** 3 attempts (or configured max), then DLQ  
+**Expected Result:** 3 attempts (or configured max), then DLQ  
 
 📸 Code snippet of retry config  
 
@@ -543,9 +605,10 @@ public class PaymentListener {
 ```
 
 📸 RabbitMQ UI with retries and DLQ  
-
+Showing the `order.payment.success.dlq` queue 
 ![Image](https://github.com/user-attachments/assets/f66513ed-0ace-43c3-a17b-9a4fc4091ea8)  
 
+and the message details in it: 
 ![Image](https://github.com/user-attachments/assets/fd2df350-0543-49a9-8e5d-76aaf1baae86)  
 
 📸 Log showing retries and recoverer invoked  
@@ -567,6 +630,8 @@ public class PaymentListener {
 org.springframework.amqp.rabbit.support.ListenerExecutionFailedException: Listener method 'public void com.yoanesber.order_payment_rabbitmq.listener.PaymentListener.handleSuccess(org.springframework.amqp.core.Message) throws java.lang.Exception' threw exception
 ...
 ```
+
+**📝 Note:** The test case successfully demonstrates the **retry** and **dead-letter queue (DLQ)** mechanism in a RabbitMQ message consumer. A forced exception in the listener triggered the retry logic, configured with a maximum of `3` attempts and a fixed delay. As expected, the message failed during all retry attempts, and the `RejectAndDontRequeueRecoverer` was invoked to prevent the message from being requeued. Consequently, the unprocessable message was routed to the `order.payment.success.dlq` queue, confirming that the system correctly handles retry exhaustion and prevents infinite processing loops. Log outputs and the RabbitMQ UI both validate this behavior.  
 
 
 ### D. Performance & Load Testing  
