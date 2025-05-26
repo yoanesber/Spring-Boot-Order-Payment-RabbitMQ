@@ -64,9 +64,12 @@ In the retry configuration, the project uses the `RejectAndDontRequeueRecoverer`
 
 The technology used in this project are:  
 
-- `Spring Boot Starter Web` – Building RESTful APIs or web applications.  
-- `Spring Boot Starter AMQP` – RabbitMQ integration via RabbitTemplate, Listener.  
-- `Lombok` – Reducing boilerplate code.  
+| Technology                   | Description                                                              |
+|------------------------------|--------------------------------------------------------------------------|
+| **Spring Boot Starter Web**  | For building RESTful APIs and web applications.                          |
+| **Spring Boot Starter AMQP** | Integrates RabbitMQ for messaging using `RabbitTemplate`, listeners, etc.|
+| **Lombok**                   | Reduces boilerplate code using annotations like `@Getter`, `@Builder`.   |
+
 ---
 
 ## 🏗️ Project Structure  
@@ -75,29 +78,43 @@ The project is organized into the following package structure:
 
 ```bash
 order-payment-rabbitmq/
-│── src/main/java/com/yoanesber/order_payment_rabbitmq/
-│   ├── 📂config/                # All Spring-related configurations: RabbitMQ, retry, listener factory.
-│   ├── 📂controller/            # Defines REST API endpoints for handling order payment requests, acting as the entry point for client interactions.
-│   ├── 📂dto/                   # Contains Data Transfer Objects used for API request and response models, such as creating an order payment.
-│   ├── 📂entity/                # Includes core domain models like Order, OrderDetail, and OrderPayment which represent the message structures.
-│   ├── 📂listener/              # RabbitMQ message consumers for payment success and failure queues.
-│   ├── 📂publisher/             # Components that publish messages to RabbitMQ via `RabbitTemplate`.
-│   ├── 📂recovery/              # Recovery utilities.
-│   ├── 📂service/               # Encapsulates the business logic related to order creation and payment processing.
-│   │   ├── 📂impl/              # Implementation of services.
-│   ├── 📂util/                  # Helper utilities for transformation or mapping.
+├── src/main/
+│   ├── 📂docker/
+│   │   ├── 📂app/                  # Dockerfile untuk application (runtime container)
+│   │   └── 📂rabbitmq/             # Berisi instruksi build image RabbitMQ dengan konfigurasi custom.
+│   ├── 📂java/com/yoanesber/order_payment_rabbitmq/
+│   │   ├── 📂config/               # All Spring-related configurations: RabbitMQ, retry, listener factory.
+│   │   ├── 📂controller/           # Defines REST API endpoints for handling order payment requests, acting as the entry point for client interactions.
+│   │   ├── 📂dto/                  # Contains Data Transfer Objects used for API request and response models, such as creating an order payment.
+│   │   ├── 📂entity/               # Includes core domain models like Order, OrderDetail, and OrderPayment which represent the message structures.
+│   │   ├── 📂listener/             # RabbitMQ message consumers for payment success and failure queues.
+│   │   ├── 📂publisher/            # Components that publish messages to RabbitMQ via `RabbitTemplate`.
+│   │   ├── 📂recovery/             # Recovery utilities.
+│   │   ├── 📂service/              # Encapsulates the business logic related to order creation and payment processing.
+│   │   │   └── 📂impl/             # Implementation of services.
+│   │   └── 📂util/                 # Helper utilities for transformation or mapping.
+│   └── 📂resources/                  
+│       └── application.properties   # Config file (e.g., Application and RabbitMQ configuration)
+├── .dockerignore                    # Ignore files for Docker build context
+├── .gitignore                       # Ignore files for Git version control
+├── Makefile                         # Task automation (build, run, setup Rabbitmq, Spring Application, etc.)
+├── mvnw                             # Maven wrapper for portability
+├── mvnw.cmd                         # Maven wrapper for Windows
+├── pom.xml                          # Maven build config (dependencies, plugins, profiles)
+├── README.md                        # Project description, usage, setup guide
+└── wait-rabbitmq-on-windows.bat     # Windows batch script to wait for Rabbitmq readiness
+
 ```
 ---
 
 ## ⚙ Environment Configuration  
 
-The application uses externalized configuration via Spring Boot's `application.properties` file, leveraging environment variables to support flexible deployment across different environments (development, staging, production, etc.).  
-Below is a breakdown of the key configurations:  
+The application uses externalized configuration via Spring Boot's `application.properties` file. Below is a breakdown of the key configurations:  
 
 ```properties
 # Spring Boot application properties file
 spring.application.name=order-payment-rabbitmq
-server.port=8081
+server.port=8080
 spring.profiles.active=development
 
 # RabbitMQ configuration
@@ -132,9 +149,50 @@ spring.rabbitmq.order-payment.dlq-failed-routing-key=order.payment.failed.dlq
 
 ## 🛠️ Installation & Setup  
 
-This section provides a step-by-step walkthrough to install and configure RabbitMQ, followed by setting up the Spring Boot application. RabbitMQ is used as a message broker to publish and consume payment success and failure events for the Order Payment System.  
+Follow these steps to set up and run the project locally:  
 
-### A. Set Up RabbitMQ  
+### ✅ Prerequisites
+
+Make sure the following tools are installed on your system:
+
+| Tool                                      | Description                                                                 | Required      |
+|-------------------------------------------|-----------------------------------------------------------------------------|---------------|
+| [Java 17+](https://adoptium.net/)         | Java Development Kit (JDK) to run the Quarkus application                   | ✅            |
+| [RabbitMQ](https://www.rabbitmq.com/)     | Message broker used for asynchronous communication                          | ✅            |
+| [Make](https://www.gnu.org/software/make/)| Automation tool for tasks like `make run-app`                               | ✅            |
+| [Docker](https://www.docker.com/)         | To run services like Kafka/PostgreSQL in isolated containers                | ⚠️ *optional* |
+
+### ☕ A. Install Java 17  
+
+1. Ensure **Java 17** is installed on your system. You can verify this with:  
+
+```bash
+java --version
+```  
+
+2. If Java is not installed, follow one of the methods below based on your operating system:  
+
+#### 🐧 Linux  
+
+**Using apt (Ubuntu/Debian-based)**:  
+
+```bash
+sudo apt update
+sudo apt install openjdk-17-jdk
+```  
+
+#### 🪟 Windows  
+1. Use [https://adoptium.net](https://adoptium.net) to download and install **Java 17 (Temurin distribution recommended)**.  
+
+2. After installation, ensure `JAVA_HOME` is set correctly and added to the `PATH`.  
+
+3. You can check this with:  
+
+```bash
+echo $JAVA_HOME
+```  
+
+### 🐰 B. Set Up RabbitMQ  
 
 1. Install `rabbitmq-server` on Linux  
 
@@ -280,49 +338,140 @@ http://<your-server-ip>:15672/
 
 ![Image](https://github.com/user-attachments/assets/443b7cd9-05a7-43a9-aef6-9538e9cdc619)  
 
-### B. Spring Boot Integration    
 
-1. Clone the Project  
 
-Ensure `Git` is installed, then clone the project repository:  
+### 🧰 C. Install `make` (Optional but Recommended)  
+This project uses a `Makefile` to streamline common tasks.  
+
+Install `make` if not already available:  
+
+#### 🐧 Linux  
+
+Install `make` using **APT**  
+
+```bash
+sudo apt update
+sudo apt install make
+```  
+
+You can verify installation with:   
+```bash
+make --version
+```  
+
+#### 🪟 Windows  
+
+If you're using **PowerShell**:  
+
+- Install [Chocolatey](https://chocolatey.org/install) (if not installed):  
+```bash
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+```  
+
+- Verify `Chocolatey` installation:  
+```bash
+choco --version
+```  
+
+- Install `make` via `Chocolatey`:  
+```bash
+choco install make
+```  
+
+After installation, **restart your terminal** or ensure `make` is available in your `PATH`.  
+
+### 🔁 D. Clone the Project  
+
+Clone the repository:  
 
 ```bash
 git clone https://github.com/yoanesber/Spring-Boot-Order-Payment-RabbitMQ.git
 cd Spring-Boot-Order-Payment-RabbitMQ
-```
+```  
 
-2. Configure RabbitMQ in `application.properties`  
+### ⚙️ E. Configure Application Properties  
 
-Update the configuration with RabbitMQ connection details:  
+Set up your `application.properties` in `src/main/resources`:  
 
-```bash
-# RabbitMQ Configuration
-spring.rabbitmq.host=<your_host_ip>
+```properties
+# Spring Boot application properties file
+spring.application.name=order-payment-rabbitmq
+server.port=8080
+spring.profiles.active=development
+
+# RabbitMQ configuration
+spring.rabbitmq.host=localhost
 spring.rabbitmq.port=5672
 spring.rabbitmq.username=spring_user
-spring.rabbitmq.password=<your_password>
-
-# Optional (if using custom virtual host)
+spring.rabbitmq.password=<password>
 spring.rabbitmq.virtual-host=/order-payment
+spring.rabbitmq.publisher-returns=true
+spring.rabbitmq.channel-cache-size=10
+spring.rabbitmq.connection-limit=10
+spring.rabbitmq.publisher-confirm-type=correlated
+spring.rabbitmq.requested-heart-beat=30
+spring.rabbitmq.connection-timeout=30000
+
+# RabbitMQ exchange and queue configuration
+spring.rabbitmq.order-payment.exchange-name=order.payment.exchange
+spring.rabbitmq.order-payment.payment-success-queue-name=order.payment.success.queue
+spring.rabbitmq.order-payment.payment-failed-queue-name=order.payment.failed.queue
+spring.rabbitmq.order-payment.payment-success-routing-key=order.payment.success
+spring.rabbitmq.order-payment.payment-failed-routing-key=order.payment.failed
+
+# RabbitMQ dead-letter exchange and queue configuration
+spring.rabbitmq.order-payment.exchange-dlx-name=order.payment.dlx.exchange
+spring.rabbitmq.order-payment.dlq-success-queue-name=order.payment.success.dlq
+spring.rabbitmq.order-payment.dlq-failed-queue-name=order.payment.failed.dlq
+spring.rabbitmq.order-payment.dlq-success-routing-key=order.payment.success.dlq
+spring.rabbitmq.order-payment.dlq-failed-routing-key=order.payment.failed.dlq
 ```
 
 **📌 Note:** Replace host and credentials with actual values for your environment.
 
-4. Run the Spring Boot Application  
+## 🚀 F. Running the Application  
 
-Use Maven to start the application:  
+This section provides step-by-step instructions to run the application either **locally** or via **Docker containers**.
+
+- **Notes**:  
+  - All commands are defined in the `Makefile`.
+  - To run using `make`, ensure that `make` is installed on your system.
+  - To run the application in containers, make sure `Docker` is installed and running.
+
+### 🔧 Run Locally (Non-containerized)
+
+Ensure RabbitMQ Messaging Server are running locally, then:
 
 ```bash
-mvn spring-boot:run
+make dev
 ```
 
-Once started, the server should be accessible at:  
+### 🐳 Run Using Docker
+
+To build and run all services (RabbitMQ Messaging Server, Spring app):
 
 ```bash
-http://localhost:8081/ 
+make docker-start-all
 ```
 
-You can test the API using: Postman (Desktop/Web version) or cURL
+To stop and remove all containers:
+
+```bash
+make docker-stop-all
+```
+
+- **Notes**:  
+  - Before running the application inside Docker, make sure to update your `application.properties`
+    - Replace `localhost` with the appropriate **container name** for services like RabbitMQ Messaging Server.  
+    - For example:
+      - Change `localhost` to `rabbitmq-server`
+
+### 🟢 Application is Running
+
+Now your application is accessible at:
+```bash
+http://localhost:8080
+```
 
 ---
 
@@ -439,24 +588,24 @@ Simulate RabbitMQ being offline when sending a payment message using `RabbitTemp
 📸 Log output showing publishing failure  
 
 ```bash
-2025-04-17T12:10:03.110+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] c.y.o.publisher.MessagePublisher         : Attempt 1 to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z)
+2025-04-17T12:10:03.110+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8080-exec-3] c.y.o.publisher.MessagePublisher         : Attempt 1 to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z)
 2025-04-17T12:10:04.895+07:00 ERROR 51272 --- [order-payment-rabbitmq] [ntContainer#0-5] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
-2025-04-17T12:10:04.895+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:04.895+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8080-exec-3] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
 2025-04-17T12:10:06.968+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#0-5] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
 2025-04-17T12:10:07.919+07:00  WARN 51272 --- [order-payment-rabbitmq] [ntContainer#1-4] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it. Exception summary: org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused: getsockopt
 2025-04-17T12:10:07.920+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#1-4] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@6ff03037: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
-2025-04-17T12:10:08.976+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] c.y.o.publisher.MessagePublisher         : Attempt 2 to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z)
+2025-04-17T12:10:08.976+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8080-exec-3] c.y.o.publisher.MessagePublisher         : Attempt 2 to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z)
 2025-04-17T12:10:09.039+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#1-5] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
 2025-04-17T12:10:11.113+07:00 ERROR 51272 --- [order-payment-rabbitmq] [ntContainer#1-5] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
-2025-04-17T12:10:11.113+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:11.113+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8080-exec-3] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
 2025-04-17T12:10:13.170+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#1-5] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
 2025-04-17T12:10:14.113+07:00  WARN 51272 --- [order-payment-rabbitmq] [ntContainer#0-5] o.s.a.r.l.SimpleMessageListenerContainer : Consumer raised exception, processing can restart if the connection factory supports it. Exception summary: org.springframework.amqp.AmqpConnectException: java.net.ConnectException: Connection refused: getsockopt
 2025-04-17T12:10:14.113+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#0-5] o.s.a.r.l.SimpleMessageListenerContainer : Restarting Consumer@4b2e39b5: tags=[[]], channel=null, acknowledgeMode=AUTO local queue size=0
-2025-04-17T12:10:15.173+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] c.y.o.publisher.MessagePublisher         : Attempt 3 to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z)
+2025-04-17T12:10:15.173+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8080-exec-3] c.y.o.publisher.MessagePublisher         : Attempt 3 to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z)
 2025-04-17T12:10:15.222+07:00  INFO 51272 --- [order-payment-rabbitmq] [ntContainer#0-6] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
 2025-04-17T12:10:17.282+07:00 ERROR 51272 --- [order-payment-rabbitmq] [ntContainer#0-6] o.s.a.r.l.SimpleMessageListenerContainer : Failed to check/redeclare auto-delete queue(s).
-2025-04-17T12:10:17.282+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
-2025-04-17T12:10:19.328+07:00 ERROR 51272 --- [order-payment-rabbitmq] [nio-8081-exec-3] c.y.o.publisher.MessagePublisher         : All retry attempts failed to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z). Last error: java.net.ConnectException: Connection refused: getsockopt
+2025-04-17T12:10:17.282+07:00  INFO 51272 --- [order-payment-rabbitmq] [nio-8080-exec-3] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: 172.26.161.183:5672
+2025-04-17T12:10:19.328+07:00 ERROR 51272 --- [order-payment-rabbitmq] [nio-8080-exec-3] c.y.o.publisher.MessagePublisher         : All retry attempts failed to publish message: OrderPayment(id=1744866603110, orderId=ORD123456789, amount=199.99, currency=USD, paymentMethod=CREDIT_CARD, paymentStatus=SUCCESS, cardNumber=1234 5678 9012 3456, cardExpiry=31/12, cardCvv=123, paypalEmail=null, bankAccount=null, bankName=null, transactionId=TXN1744866603110, retryCount=0, createdAt=2025-04-17T05:10:03.110109600Z, updatedAt=2025-04-17T05:10:03.110109600Z). Last error: java.net.ConnectException: Connection refused: getsockopt
 ...
 ```  
 

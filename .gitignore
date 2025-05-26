@@ -84,14 +84,10 @@ hs_err_pid*
 /build/
 
 ### Ignore environment/config files ###
+/src/main/resources/.env
+/src/main/resources/application.properties
 .env
-.env.development
-.env.testing
-.env.production
 application.properties
-application-dev.properties
-application-test.properties
-application-prod.properties
 
 ### Ignore local database files ###
 *.db

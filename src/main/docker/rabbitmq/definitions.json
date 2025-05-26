@@ -1,0 +1,39 @@
+{
+  "users": [
+    {
+      "name": "spring_admin",
+      "password": "P@ssw0rd",
+      "tags": [
+        "administrator",
+        "monitoring",
+        "management"
+      ]
+    },
+    {
+      "name": "spring_user",
+      "password": "P@ssw0rd",
+      "tags": []
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/order-payment"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "spring_admin",
+      "vhost": "/order-payment",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "spring_user",
+      "vhost": "/order-payment",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ]
+}
