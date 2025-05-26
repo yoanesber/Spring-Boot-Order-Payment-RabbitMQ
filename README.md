@@ -488,6 +488,13 @@ The REST API serves as the entry point for order payment creation. These endpoin
 
 Create order with valid payload → expect `201 Created`.  
 
+**Endpoint:**  
+
+```bash
+POST http://localhost:8080/api/v1/order-payment
+Content-Type: application/json
+```  
+
 **Request:**  
 
 ```json
