@@ -78,32 +78,23 @@ The project is organized into the following package structure:
 
 ```bash
 order-payment-rabbitmq/
-├── src/main/
-│   ├── 📂docker/
-│   │   ├── 📂app/                  # Dockerfile untuk application (runtime container)
-│   │   └── 📂rabbitmq/             # Berisi instruksi build image RabbitMQ dengan konfigurasi custom.
-│   ├── 📂java/com/yoanesber/order_payment_rabbitmq/
-│   │   ├── 📂config/               # All Spring-related configurations: RabbitMQ, retry, listener factory.
-│   │   ├── 📂controller/           # Defines REST API endpoints for handling order payment requests, acting as the entry point for client interactions.
-│   │   ├── 📂dto/                  # Contains Data Transfer Objects used for API request and response models, such as creating an order payment.
-│   │   ├── 📂entity/               # Includes core domain models like Order, OrderDetail, and OrderPayment which represent the message structures.
-│   │   ├── 📂listener/             # RabbitMQ message consumers for payment success and failure queues.
-│   │   ├── 📂publisher/            # Components that publish messages to RabbitMQ via `RabbitTemplate`.
-│   │   ├── 📂recovery/             # Recovery utilities.
-│   │   ├── 📂service/              # Encapsulates the business logic related to order creation and payment processing.
-│   │   │   └── 📂impl/             # Implementation of services.
-│   │   └── 📂util/                 # Helper utilities for transformation or mapping.
-│   └── 📂resources/                  
-│       └── application.properties   # Config file (e.g., Application and RabbitMQ configuration)
-├── .dockerignore                    # Ignore files for Docker build context
-├── .gitignore                       # Ignore files for Git version control
-├── Makefile                         # Task automation (build, run, setup Rabbitmq, Spring Application, etc.)
-├── mvnw                             # Maven wrapper for portability
-├── mvnw.cmd                         # Maven wrapper for Windows
-├── pom.xml                          # Maven build config (dependencies, plugins, profiles)
-├── README.md                        # Project description, usage, setup guide
-└── wait-rabbitmq-on-windows.bat     # Windows batch script to wait for Rabbitmq readiness
-
+└── src/main/
+    ├── 📂docker/
+    │   ├── 📂app/                  # Dockerfile untuk application (runtime container)
+    │   └── 📂rabbitmq/             # Berisi instruksi build image RabbitMQ dengan konfigurasi custom.
+    ├── 📂java/
+    │   ├── 📂config/               # All Spring-related configurations: RabbitMQ, retry, listener factory.
+    │   ├── 📂controller/           # Defines REST API endpoints for handling order payment requests, acting as the entry point for client interactions.
+    │   ├── 📂dto/                  # Contains Data Transfer Objects used for API request and response models, such as creating an order payment.
+    │   ├── 📂entity/               # Includes core domain models like Order, OrderDetail, and OrderPayment which represent the message structures.
+    │   ├── 📂listener/             # RabbitMQ message consumers for payment success and failure queues.
+    │   ├── 📂publisher/            # Components that publish messages to RabbitMQ via `RabbitTemplate`.
+    │   ├── 📂recovery/             # Recovery utilities.
+    │   ├── 📂service/              # Encapsulates the business logic related to order creation and payment processing.
+    │   │   └── 📂impl/             # Implementation of services.
+    │   └── 📂util/                 # Helper utilities for transformation or mapping.
+    └── 📂resources/                  
+        └── application.properties   # Config file (e.g., Application and RabbitMQ configuration)
 ```
 ---
 
