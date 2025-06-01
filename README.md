@@ -98,45 +98,6 @@ order-payment-rabbitmq/
 ```
 ---
 
-## ⚙ Environment Configuration  
-
-The application uses externalized configuration via Spring Boot's `application.properties` file. Below is a breakdown of the key configurations:  
-
-```properties
-# Spring Boot application properties file
-spring.application.name=order-payment-rabbitmq
-server.port=8080
-spring.profiles.active=development
-
-# RabbitMQ configuration
-spring.rabbitmq.host=<your_rabbitmq_host>
-spring.rabbitmq.port=5672
-spring.rabbitmq.username=<your_rabbitmq_username>
-spring.rabbitmq.password=<your_rabbitmq_password>
-spring.rabbitmq.virtual-host=/order-payment
-spring.rabbitmq.publisher-returns=true
-spring.rabbitmq.channel-cache-size=10
-spring.rabbitmq.connection-limit=10
-spring.rabbitmq.publisher-confirm-type=correlated
-spring.rabbitmq.requested-heart-beat=30
-spring.rabbitmq.connection-timeout=30000
-
-# RabbitMQ exchange and queue configuration
-spring.rabbitmq.order-payment.exchange-name=order.payment.exchange
-spring.rabbitmq.order-payment.payment-success-queue-name=order.payment.success.queue
-spring.rabbitmq.order-payment.payment-failed-queue-name=order.payment.failed.queue
-spring.rabbitmq.order-payment.payment-success-routing-key=order.payment.success
-spring.rabbitmq.order-payment.payment-failed-routing-key=order.payment.failed
-
-# RabbitMQ dead-letter exchange and queue configuration
-spring.rabbitmq.order-payment.exchange-dlx-name=order.payment.dlx.exchange
-spring.rabbitmq.order-payment.dlq-success-queue-name=order.payment.success.dlq
-spring.rabbitmq.order-payment.dlq-failed-queue-name=order.payment.failed.dlq
-spring.rabbitmq.order-payment.dlq-success-routing-key=order.payment.success.dlq
-spring.rabbitmq.order-payment.dlq-failed-routing-key=order.payment.failed.dlq
-```
----
-
 
 ## 🛠️ Installation & Setup  
 
@@ -146,12 +107,12 @@ Follow these steps to set up and run the project locally:
 
 Make sure the following tools are installed on your system:
 
-| Tool                                      | Description                                                                 | Required      |
-|-------------------------------------------|-----------------------------------------------------------------------------|---------------|
-| [Java 17+](https://adoptium.net/)         | Java Development Kit (JDK) to run the Quarkus application                   | ✅            |
-| [RabbitMQ](https://www.rabbitmq.com/)     | Message broker used for asynchronous communication                          | ✅            |
-| [Make](https://www.gnu.org/software/make/)| Automation tool for tasks like `make run-app`                               | ✅            |
-| [Docker](https://www.docker.com/)         | To run services like Kafka/PostgreSQL in isolated containers                | ⚠️ *optional* |
+| Tool                                      | Description                                                   | Required      |
+|-------------------------------------------|---------------------------------------------------------------|---------------|
+| [Java 17+](https://adoptium.net/)         | Java Development Kit (JDK) to run the Quarkus application     | ✅            |
+| [RabbitMQ](https://www.rabbitmq.com/)     | Message broker used for asynchronous communication            | ✅            |
+| [Make](https://www.gnu.org/software/make/)| Automation tool for tasks like `make run-app`                 | ✅            |
+| [Docker](https://www.docker.com/)         | To run services like RabbitMQ in isolated containers          | ⚠️ *optional* |
 
 ### ☕ A. Install Java 17  
 
